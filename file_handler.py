@@ -153,7 +153,7 @@ class FileHandler:
             return False
 
     # This is the method we will apply our custom decorator to.
-    @colorize("blue") # We use our decorator here, asking for blue text.
+    @colorize("red") # We use our decorator here, asking for blue text.
     def display_content(self):
         """Displays the content of the file. The decorator will color it."""
         return self.content

@@ -4,7 +4,7 @@ from file_handler import FileHandler, AdvancedFileHandler
 handler1 = FileHandler('test1.txt')
 
 # Use the colorful display method
-print("--- Displaying content in blue ---")
+print("--- Displaying 1st file content ---")
 handler1.display_content()
 
 # Combine two files using the '+' operator we fixed
