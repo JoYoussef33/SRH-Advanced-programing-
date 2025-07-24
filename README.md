@@ -16,8 +16,9 @@ This is a Python project for the Advanced Programming course at SRH. It's a cust
     # Create and activate a virtual environment
     python -m venv venv
     source venv/bin/activate
-    
-    # or this for windows
+    ```
+    **Set up the environment for windows:**
+    ```bash
     python -m venv venv
     .\venv\Scripts\Activate.ps1
     ```
@@ -31,5 +32,5 @@ This is a Python project for the Advanced Programming course at SRH. It's a cust
     ```
 4.  **Run The entire code automatically:**
     ```bash
-    py main.py
+    python main.py
     ```
