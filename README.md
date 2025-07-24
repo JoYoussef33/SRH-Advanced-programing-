@@ -29,3 +29,7 @@ This is a Python project for the Advanced Programming course at SRH. It's a cust
     ```bash
     pytest
     ```
+4.  **Run The entire code automatically:**
+    ```bash
+    py main.py
+    ```
