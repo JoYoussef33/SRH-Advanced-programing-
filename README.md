@@ -15,7 +15,8 @@ This is a Python project for the Advanced Programming course at SRH. It's a cust
     ```bash
     # Create and activate a virtual environment
     python -m venv venv
-    source venv/bin/activate
+    for linux or a new codespace >>>>  source venv/bin/activate
+    for windows >>>                    .\venv\Scripts\Activate.ps1
     ```
 2.  **Install dependencies:**
     ```bash
