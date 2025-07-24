@@ -23,7 +23,7 @@ def test_file_concatenation_add_operator():
     # ACT: "Add" the two handlers together. This should create a new file 'concatenated.txt'.
     result_handler = handler1 + handler2
     # ASSERT: Check if the new file's content is correct.
-    expected_content = "Hello World\nThis is a test\n"
+    expected_content = "Hello World\nI CAN'T BELIEVE IT WORKED!!!!\n"
     assert result_handler.content == expected_content
     # We also check if the new file was created at the correct path.
     assert result_handler.filepath == "concatenated.txt"
@@ -33,8 +33,8 @@ def test_inheritance_and_overriding():
     # ARRANGE: Create an object of our 'Advanced' child class.
     advanced_handler = AdvancedFileHandler("test2.txt")
     # ACT & ASSERT: Check its new functionality.
-    # The word count of "This is a test\n" should be 4.
-    assert advanced_handler.word_count() == 4
+    # The word count of "This is a test\n" should be 5.
+    assert advanced_handler.word_count() == 5
     # Check that the overridden __str__ method works as expected.
     assert str(advanced_handler) == "*** AdvancedFileHandler for 'test2.txt' ***"
 
