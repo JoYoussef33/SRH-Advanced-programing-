@@ -22,6 +22,11 @@ public class TrackingService extends Service {
     public static final String CHANNEL_ID = "paddle_tracking_channel";
     public static final int NOTIF_ID = 1001;
 
+    // GPS noise thresholds
+    private static final float MAX_ACCURACY_M   = 20f;  // ignore fixes worse than 20 m
+    private static final float MIN_DISTANCE_M   = 3f;   // ignore jumps smaller than 3 m
+    private static final float MIN_SPEED_KMH    = 1.2f; // clamp to 0 below 1.2 km/h (GPS drift)
+
     private final IBinder binder = new LocalBinder();
     private LocationManager locationManager;
     private LocationListener locationListener;
@@ -36,7 +41,8 @@ public class TrackingService extends Service {
     private OnTrackingUpdateListener updateListener;
 
     public interface OnTrackingUpdateListener {
-        void onUpdate(float distanceKm, float speedKmh, float maxSpeedKmh, int calories, long elapsedMs);
+        void onUpdate(float distanceKm, float speedKmh, float maxSpeedKmh,
+                      int calories, long elapsedMs);
         void onGpsStatusChanged(boolean hasGps);
     }
 
@@ -52,9 +58,7 @@ public class TrackingService extends Service {
     }
 
     @Override
-    public IBinder onBind(Intent intent) {
-        return binder;
-    }
+    public IBinder onBind(Intent intent) { return binder; }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -72,25 +76,20 @@ public class TrackingService extends Service {
         sessionStartTime = System.currentTimeMillis();
 
         locationListener = new LocationListener() {
-            @Override
-            public void onLocationChanged(Location location) {
-                handleLocation(location);
-            }
-            @Override
-            public void onProviderEnabled(String provider) {
+            @Override public void onLocationChanged(Location loc) { handleLocation(loc); }
+            @Override public void onProviderEnabled(String p) {
                 if (updateListener != null) updateListener.onGpsStatusChanged(true);
             }
-            @Override
-            public void onProviderDisabled(String provider) {
+            @Override public void onProviderDisabled(String p) {
                 if (updateListener != null) updateListener.onGpsStatusChanged(false);
             }
-            @Override
-            public void onStatusChanged(String provider, int status, Bundle extras) {}
+            @Override public void onStatusChanged(String p, int s, Bundle e) {}
         };
 
         try {
             locationManager.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER, 1000L, 0.5f, locationListener, Looper.getMainLooper());
+                LocationManager.GPS_PROVIDER, 1000L, 0f,
+                locationListener, Looper.getMainLooper());
         } catch (SecurityException e) {
             e.printStackTrace();
         }
@@ -100,71 +99,89 @@ public class TrackingService extends Service {
         if (!isTracking) return;
         isTracking = false;
         if (locationListener != null) {
-            try { locationManager.removeUpdates(locationListener); } catch (SecurityException ignored) {}
+            try { locationManager.removeUpdates(locationListener); }
+            catch (SecurityException ignored) {}
         }
         currentSpeedKmh = 0f;
     }
 
     private void handleLocation(Location loc) {
+        // ── Accuracy gate ────────────────────────────────────────────────────
+        // If the GPS fix is poor, report that GPS is alive but skip the update
+        if (loc.getAccuracy() > MAX_ACCURACY_M) {
+            if (updateListener != null) updateListener.onGpsStatusChanged(true);
+            return;
+        }
+
+        // ── Distance ─────────────────────────────────────────────────────────
         if (lastLocation != null) {
             float dist = lastLocation.distanceTo(loc);
-            if (dist > 0.5f) {
+            // Only accumulate distance if the jump is real and both fixes were good
+            if (dist >= MIN_DISTANCE_M && lastLocation.getAccuracy() <= MAX_ACCURACY_M) {
                 totalDistanceMeters += dist;
             }
         }
         lastLocation = loc;
 
-        float rawSpeed = loc.hasSpeed() ? loc.getSpeed() : 0f;
-        currentSpeedKmh = rawSpeed * 3.6f;
+        // ── Speed ────────────────────────────────────────────────────────────
+        float rawKmh = 0f;
+        if (loc.hasSpeed()) {
+            rawKmh = loc.getSpeed() * 3.6f;
+
+        }
+        // Clamp out GPS noise floor — anything below threshold is treated as still
+        currentSpeedKmh = rawKmh < MIN_SPEED_KMH ? 0f : rawKmh;
         if (currentSpeedKmh > maxSpeedKmh) maxSpeedKmh = currentSpeedKmh;
 
+        // ── Notify UI ────────────────────────────────────────────────────────
         long elapsed = System.currentTimeMillis() - sessionStartTime;
-        float distKm = totalDistanceMeters / 1000f;
-        int calories = calcCalories(elapsed);
-
         if (updateListener != null) {
-            updateListener.onUpdate(distKm, currentSpeedKmh, maxSpeedKmh, calories, elapsed);
+            updateListener.onUpdate(
+                totalDistanceMeters / 1000f,
+                currentSpeedKmh,
+                maxSpeedKmh,
+                calcCalories(elapsed),
+                elapsed);
             updateListener.onGpsStatusChanged(true);
         }
     }
 
     private int calcCalories(long elapsedMs) {
-        // SUP paddling ~450 kcal/hour for a 70 kg person
-        double hours = elapsedMs / 3_600_000.0;
-        return (int) (450.0 * hours);
+        // SUP paddling ≈ 450 kcal/hour for a 70 kg person
+        return (int) (450.0 * elapsedMs / 3_600_000.0);
     }
 
-    public void setUpdateListener(OnTrackingUpdateListener listener) {
-        this.updateListener = listener;
-    }
+    // ── Public accessors ──────────────────────────────────────────────────────
 
-    public boolean isTracking() { return isTracking; }
-    public float getTotalDistanceKm() { return totalDistanceMeters / 1000f; }
-    public float getCurrentSpeedKmh() { return currentSpeedKmh; }
-    public float getMaxSpeedKmh() { return maxSpeedKmh; }
-    public long getSessionStartTime() { return sessionStartTime; }
-    public int getCalories() {
+    public void setUpdateListener(OnTrackingUpdateListener l) { updateListener = l; }
+    public boolean isTracking()        { return isTracking; }
+    public float getTotalDistanceKm()  { return totalDistanceMeters / 1000f; }
+    public float getCurrentSpeedKmh()  { return currentSpeedKmh; }
+    public float getMaxSpeedKmh()      { return maxSpeedKmh; }
+    public long  getSessionStartTime() { return sessionStartTime; }
+    public int   getCalories() {
         if (!isTracking || sessionStartTime == 0) return 0;
         return calcCalories(System.currentTimeMillis() - sessionStartTime);
     }
 
+    // ── Notification ──────────────────────────────────────────────────────────
+
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID,
-                getString(R.string.channel_name),
+            NotificationChannel ch = new NotificationChannel(
+                CHANNEL_ID, getString(R.string.channel_name),
                 NotificationManager.IMPORTANCE_LOW);
-            channel.setDescription(getString(R.string.channel_desc));
+            ch.setDescription(getString(R.string.channel_desc));
             NotificationManager nm = getSystemService(NotificationManager.class);
-            if (nm != null) nm.createNotificationChannel(channel);
+            if (nm != null) nm.createNotificationChannel(ch);
         }
     }
 
     private Notification buildNotification() {
         Intent intent = new Intent(this, MainActivity.class);
-        int piFlags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+        int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
             ? PendingIntent.FLAG_IMMUTABLE : 0;
-        PendingIntent pi = PendingIntent.getActivity(this, 0, intent, piFlags);
+        PendingIntent pi = PendingIntent.getActivity(this, 0, intent, flags);
         return new NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.notif_title))
             .setContentText(getString(R.string.notif_text))

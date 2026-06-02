@@ -1,336 +1,267 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<!-- Root frame lets the wave sit behind everything -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/ocean_bg"
-    android:fillViewport="true">
+    android:background="@drawable/ocean_bg">
 
-    <LinearLayout
+    <!-- Animated ocean wave — lives at the bottom, behind content -->
+    <com.paddleboard.tracker.WaveView
+        android:id="@+id/waveView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp"
-        android:gravity="center_horizontal">
+        android:layout_height="220dp"
+        android:layout_gravity="bottom"/>
 
-        <!-- Header -->
+    <!-- Main scrollable content -->
+    <!-- clipChildren=false is critical so the glow ring isn't box-clipped -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:overScrollMode="never">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="8dp">
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:clipChildren="false"
+            android:clipToPadding="false">
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="🏄 PADDLE"
-                android:textColor="@color/wave_cyan"
-                android:textSize="26sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.12"
-                android:fontFamily="sans-serif-condensed"/>
-
-            <!-- GPS status -->
+            <!-- ── Header ── -->
             <LinearLayout
-                android:id="@+id/gpsStatusContainer"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:background="#1A1E4A7A"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:paddingTop="6dp"
-                android:paddingBottom="6dp">
-
-                <View
-                    android:id="@+id/gpsIndicator"
-                    android:layout_width="10dp"
-                    android:layout_height="10dp"
-                    android:background="@drawable/gps_indicator"
-                    android:layout_marginEnd="6dp"/>
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="6dp">
 
                 <TextView
-                    android:id="@+id/tvGpsStatus"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="@string/waiting_gps"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp"
-                    android:letterSpacing="0.08"/>
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- Duration timer (big, center) -->
-        <TextView
-            android:id="@+id/tvDuration"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="00:00:00"
-            android:textColor="@color/foam_white"
-            android:textSize="56sp"
-            android:textStyle="bold"
-            android:fontFamily="sans-serif-condensed"
-            android:letterSpacing="0.05"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="4dp"/>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/duration_label"
-            android:textColor="@color/text_secondary"
-            android:textSize="11sp"
-            android:letterSpacing="0.2"
-            android:layout_marginBottom="24dp"/>
-
-        <!-- Wave divider -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@drawable/wave_divider"
-            android:layout_marginBottom="24dp"/>
-
-        <!-- Stats grid: 2x2 -->
-        <GridLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:columnCount="2"
-            android:rowCount="2"
-            android:layout_marginBottom="28dp">
-
-            <!-- Distance card -->
-            <LinearLayout
-                android:id="@+id/cardDistance"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:layout_margin="6dp"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:background="@drawable/card_bg"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📍"
-                    android:textSize="24sp"
-                    android:layout_marginBottom="6dp"/>
-
-                <TextView
-                    android:id="@+id/tvDistance"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0.00"
+                    android:layout_weight="1"
+                    android:text="🏄 PADDLE"
                     android:textColor="@color/wave_cyan"
-                    android:textSize="34sp"
+                    android:textSize="28sp"
                     android:textStyle="bold"
+                    android:letterSpacing="0.1"
                     android:fontFamily="sans-serif-condensed"/>
 
-                <TextView
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/km"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    android:letterSpacing="0.1"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:paddingTop="5dp"
+                    android:paddingBottom="5dp"
+                    android:background="#1A1E4A7A">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/distance_label"
-                    android:textColor="#607090"
-                    android:textSize="10sp"
-                    android:letterSpacing="0.2"
-                    android:layout_marginTop="4dp"/>
+                    <View
+                        android:id="@+id/gpsIndicator"
+                        android:layout_width="9dp"
+                        android:layout_height="9dp"
+                        android:background="@drawable/gps_indicator"
+                        android:layout_marginEnd="5dp"/>
+
+                    <TextView
+                        android:id="@+id/tvGpsStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/waiting_gps"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp"/>
+                </LinearLayout>
             </LinearLayout>
 
-            <!-- Speed card -->
-            <LinearLayout
-                android:id="@+id/cardSpeed"
-                android:layout_width="0dp"
+            <!-- ── Big Timer ── -->
+            <TextView
+                android:id="@+id/tvDuration"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:layout_margin="6dp"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:background="@drawable/card_bg"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="💨"
-                    android:textSize="24sp"
-                    android:layout_marginBottom="6dp"/>
-
-                <TextView
-                    android:id="@+id/tvSpeed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0.0"
-                    android:textColor="@color/wave_teal"
-                    android:textSize="34sp"
-                    android:textStyle="bold"
-                    android:fontFamily="sans-serif-condensed"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/kmh"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    android:letterSpacing="0.1"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/speed_label"
-                    android:textColor="#607090"
-                    android:textSize="10sp"
-                    android:letterSpacing="0.2"
-                    android:layout_marginTop="4dp"/>
-            </LinearLayout>
-
-            <!-- Calories card -->
-            <LinearLayout
-                android:id="@+id/cardCalories"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:layout_margin="6dp"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:background="@drawable/card_bg"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🔥"
-                    android:textSize="24sp"
-                    android:layout_marginBottom="6dp"/>
-
-                <TextView
-                    android:id="@+id/tvCalories"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0"
-                    android:textColor="@color/sun_coral"
-                    android:textSize="34sp"
-                    android:textStyle="bold"
-                    android:fontFamily="sans-serif-condensed"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/kcal"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    android:letterSpacing="0.1"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/calories_label"
-                    android:textColor="#607090"
-                    android:textSize="10sp"
-                    android:letterSpacing="0.2"
-                    android:layout_marginTop="4dp"/>
-            </LinearLayout>
-
-            <!-- Max speed card -->
-            <LinearLayout
-                android:id="@+id/cardMaxSpeed"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:layout_margin="6dp"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:background="@drawable/card_bg"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="⚡"
-                    android:textSize="24sp"
-                    android:layout_marginBottom="6dp"/>
-
-                <TextView
-                    android:id="@+id/tvMaxSpeed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0.0"
-                    android:textColor="@color/sun_yellow"
-                    android:textSize="34sp"
-                    android:textStyle="bold"
-                    android:fontFamily="sans-serif-condensed"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/kmh"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    android:letterSpacing="0.1"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="MAX SPEED"
-                    android:textColor="#607090"
-                    android:textSize="10sp"
-                    android:letterSpacing="0.2"
-                    android:layout_marginTop="4dp"/>
-            </LinearLayout>
-        </GridLayout>
-
-        <!-- Main CTA button -->
-        <FrameLayout
-            android:layout_width="200dp"
-            android:layout_height="200dp"
-            android:layout_gravity="center"
-            android:layout_marginBottom="32dp">
-
-            <!-- Outer glow ring (animated) -->
-            <View
-                android:id="@+id/btnGlowRing"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@drawable/btn_start_bg"
-                android:alpha="0.4"/>
-
-            <!-- Actual button -->
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/btnStartStop"
-                android:layout_width="168dp"
-                android:layout_height="168dp"
-                android:layout_gravity="center"
-                android:background="@drawable/btn_start_bg"
-                android:text="@string/start_session"
-                android:textColor="@color/ocean_deep"
-                android:textSize="15sp"
+                android:text="00:00:00"
+                android:textColor="@color/foam_white"
+                android:textSize="62sp"
                 android:textStyle="bold"
-                android:letterSpacing="0.1"
-                android:elevation="8dp"
-                android:stateListAnimator="@null"/>
-        </FrameLayout>
+                android:fontFamily="sans-serif-condensed"
+                android:letterSpacing="0.04"
+                android:layout_marginTop="4dp"/>
 
-        <!-- Status text -->
-        <TextView
-            android:id="@+id/tvStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Ready to paddle 🌊"
-            android:textColor="@color/text_secondary"
-            android:textSize="14sp"
-            android:layout_marginBottom="24dp"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DURATION"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp"
+                android:letterSpacing="0.22"
+                android:layout_marginBottom="20dp"/>
 
-    </LinearLayout>
-</ScrollView>
+            <!-- ── Wave divider ── -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@drawable/wave_divider"
+                android:layout_marginBottom="20dp"/>
+
+            <!-- ── Stats 2×2 ── -->
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="2"
+                android:rowCount="2"
+                android:layout_marginBottom="16dp">
+
+                <!-- Distance -->
+                <LinearLayout
+                    android:id="@+id/cardDistance"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="6dp"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/card_bg"
+                    android:padding="18dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="📍" android:textSize="22sp" android:layout_marginBottom="4dp"/>
+                    <TextView android:id="@+id/tvDistance"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="0.00" android:textColor="@color/wave_cyan"
+                        android:textSize="36sp" android:textStyle="bold"
+                        android:fontFamily="sans-serif-condensed"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="km" android:textColor="@color/text_secondary" android:textSize="13sp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="DISTANCE" android:textColor="#607090"
+                        android:textSize="10sp" android:letterSpacing="0.2" android:layout_marginTop="3dp"/>
+                </LinearLayout>
+
+                <!-- Speed -->
+                <LinearLayout
+                    android:id="@+id/cardSpeed"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="6dp"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/card_bg"
+                    android:padding="18dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="💨" android:textSize="22sp" android:layout_marginBottom="4dp"/>
+                    <TextView android:id="@+id/tvSpeed"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="0.0" android:textColor="@color/wave_teal"
+                        android:textSize="36sp" android:textStyle="bold"
+                        android:fontFamily="sans-serif-condensed"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="km/h" android:textColor="@color/text_secondary" android:textSize="13sp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="SPEED" android:textColor="#607090"
+                        android:textSize="10sp" android:letterSpacing="0.2" android:layout_marginTop="3dp"/>
+                </LinearLayout>
+
+                <!-- Calories -->
+                <LinearLayout
+                    android:id="@+id/cardCalories"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="6dp"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/card_bg"
+                    android:padding="18dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="🔥" android:textSize="22sp" android:layout_marginBottom="4dp"/>
+                    <TextView android:id="@+id/tvCalories"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="0" android:textColor="@color/sun_coral"
+                        android:textSize="36sp" android:textStyle="bold"
+                        android:fontFamily="sans-serif-condensed"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="kcal" android:textColor="@color/text_secondary" android:textSize="13sp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="CALORIES" android:textColor="#607090"
+                        android:textSize="10sp" android:letterSpacing="0.2" android:layout_marginTop="3dp"/>
+                </LinearLayout>
+
+                <!-- Max Speed -->
+                <LinearLayout
+                    android:id="@+id/cardMaxSpeed"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="6dp"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/card_bg"
+                    android:padding="18dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="⚡" android:textSize="22sp" android:layout_marginBottom="4dp"/>
+                    <TextView android:id="@+id/tvMaxSpeed"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="0.0" android:textColor="@color/sun_yellow"
+                        android:textSize="36sp" android:textStyle="bold"
+                        android:fontFamily="sans-serif-condensed"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="km/h" android:textColor="@color/text_secondary" android:textSize="13sp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="MAX SPEED" android:textColor="#607090"
+                        android:textSize="10sp" android:letterSpacing="0.2" android:layout_marginTop="3dp"/>
+                </LinearLayout>
+            </GridLayout>
+
+            <!-- ── Button area — clipChildren=false lets the glow extend freely ── -->
+            <FrameLayout
+                android:layout_width="260dp"
+                android:layout_height="260dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:background="@android:color/transparent"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp">
+
+                <!-- Outer corona ring (animated to scale up + fade out in Java) -->
+                <View
+                    android:id="@+id/btnGlowRing"
+                    android:layout_width="180dp"
+                    android:layout_height="180dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/glow_cyan"/>
+
+                <!-- Button face -->
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnStartStop"
+                    android:layout_width="160dp"
+                    android:layout_height="160dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/btn_circle_cyan"
+                    android:text="START\nSESSION"
+                    android:textColor="@color/ocean_deep"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.08"
+                    android:elevation="6dp"
+                    android:stateListAnimator="@null"/>
+            </FrameLayout>
+
+            <!-- Status -->
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ready to paddle 🌊"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:layout_marginBottom="180dp"/>
+
+        </LinearLayout>
+    </ScrollView>
+</FrameLayout>

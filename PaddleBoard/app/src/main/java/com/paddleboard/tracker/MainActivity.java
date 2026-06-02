@@ -14,10 +14,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
-import android.widget.TextView;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.LinearInterpolator;
 import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -26,160 +25,207 @@ import androidx.core.content.ContextCompat;
 import com.paddleboard.tracker.databinding.ActivityMainBinding;
 import java.util.Locale;
 
-public class MainActivity extends AppCompatActivity implements TrackingService.OnTrackingUpdateListener {
+public class MainActivity extends AppCompatActivity
+        implements TrackingService.OnTrackingUpdateListener {
 
-    private ActivityMainBinding binding;
+    private ActivityMainBinding b;
     private TrackingService trackingService;
     private boolean serviceBound = false;
     private boolean sessionActive = false;
 
     private final Handler timerHandler = new Handler(Looper.getMainLooper());
-    private Animation breatheAnim;
-    private Animation pulseAnim;
-    private AnimatorSet glowAnimSet;
 
-    private final ActivityResultLauncher<String> permissionLauncher =
+    // Glow animators kept so we can cancel/restart them
+    private AnimatorSet coronaAnim;
+    private AnimatorSet breatheAnim;
+
+    private final ActivityResultLauncher<String> permLauncher =
         registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
             if (granted) startSession();
             else Toast.makeText(this, getString(R.string.permission_needed), Toast.LENGTH_LONG).show();
         });
 
-    private final ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder binder) {
-            TrackingService.LocalBinder lb = (TrackingService.LocalBinder) binder;
-            trackingService = lb.getService();
+    private final ServiceConnection conn = new ServiceConnection() {
+        @Override public void onServiceConnected(ComponentName n, IBinder binder) {
+            trackingService = ((TrackingService.LocalBinder) binder).getService();
             trackingService.setUpdateListener(MainActivity.this);
             serviceBound = true;
-
             if (trackingService.isTracking()) {
                 sessionActive = true;
-                updateButtonState(true);
-                startTimerDisplay();
+                applyActiveState();
+                startTimerTick();
             }
         }
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            serviceBound = false;
-        }
+        @Override public void onServiceDisconnected(ComponentName n) { serviceBound = false; }
     };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding = ActivityMainBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+        b = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(b.getRoot());
 
-        breatheAnim = AnimationUtils.loadAnimation(this, R.anim.breathe);
-        pulseAnim = AnimationUtils.loadAnimation(this, R.anim.pulse);
+        startIdleGlow();
 
-        setupGlowAnimation();
-        binding.btnStartStop.startAnimation(breatheAnim);
-        binding.btnGlowRing.startAnimation(pulseAnim);
-
-        binding.btnStartStop.setOnClickListener(v -> {
-            animateButtonPress(v);
+        b.btnStartStop.setOnClickListener(v -> {
+            squishButton();
             if (sessionActive) stopSession();
-            else checkPermissionAndStart();
+            else checkPermission();
         });
 
-        // Bind to service
-        Intent serviceIntent = new Intent(this, TrackingService.class);
-        bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+        Intent svc = new Intent(this, TrackingService.class);
+        bindService(svc, conn, Context.BIND_AUTO_CREATE);
     }
 
-    private void checkPermissionAndStart() {
+    // ── GPS permissions ──────────────────────────────────────────────────────
+
+    private void checkPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             startSession();
         } else {
-            permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+            permLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
         }
     }
 
-    private void startSession() {
-        Intent serviceIntent = new Intent(this, TrackingService.class);
-        ContextCompat.startForegroundService(this, serviceIntent);
+    // ── Session control ──────────────────────────────────────────────────────
 
+    private void startSession() {
+        Intent svc = new Intent(this, TrackingService.class);
+        ContextCompat.startForegroundService(this, svc);
         if (serviceBound) {
             trackingService.startTracking();
             sessionActive = true;
-            updateButtonState(true);
-            startTimerDisplay();
+            applyActiveState();
+            startTimerTick();
             animateCardsIn();
-            binding.tvStatus.setText("Session active — paddle hard! 🌊");
+            b.tvStatus.setText("Session active — paddle hard! 🌊");
         }
     }
 
     private void stopSession() {
-        if (serviceBound) {
-            trackingService.stopTracking();
-        }
+        if (serviceBound) trackingService.stopTracking();
         sessionActive = false;
         timerHandler.removeCallbacksAndMessages(null);
-        updateButtonState(false);
-        binding.tvStatus.setText("Great session! 🏄 Rest up.");
-
-        // Show final stats flash
-        flashCard(binding.cardDistance);
-        flashCard(binding.cardSpeed);
-        flashCard(binding.cardCalories);
-        flashCard(binding.cardMaxSpeed);
+        applyIdleState();
+        b.tvStatus.setText("Great session! 🏄 Rest up.");
+        flashCard(b.cardDistance);
+        flashCard(b.cardSpeed);
+        flashCard(b.cardCalories);
+        flashCard(b.cardMaxSpeed);
     }
 
-    private void updateButtonState(boolean active) {
-        if (active) {
-            binding.btnStartStop.clearAnimation();
-            binding.btnGlowRing.clearAnimation();
-            binding.btnStartStop.setBackgroundResource(R.drawable.btn_stop_bg);
-            binding.btnGlowRing.setBackgroundResource(R.drawable.btn_stop_bg);
-            binding.btnStartStop.setText(R.string.stop_session);
-            binding.btnStartStop.setTextColor(Color.WHITE);
+    // ── Button visual states ─────────────────────────────────────────────────
 
-            // Faster pulse when active
-            Animation activePulse = AnimationUtils.loadAnimation(this, R.anim.pulse);
-            activePulse.setDuration(800);
-            binding.btnStartStop.startAnimation(activePulse);
-            binding.btnGlowRing.startAnimation(pulseAnim);
-        } else {
-            binding.btnStartStop.clearAnimation();
-            binding.btnGlowRing.clearAnimation();
-            binding.btnStartStop.setBackgroundResource(R.drawable.btn_start_bg);
-            binding.btnGlowRing.setBackgroundResource(R.drawable.btn_start_bg);
-            binding.btnStartStop.setText(R.string.start_session);
-            binding.btnStartStop.setTextColor(getColor(R.color.ocean_deep));
-            binding.btnStartStop.startAnimation(breatheAnim);
-            binding.btnGlowRing.startAnimation(pulseAnim);
-        }
+    private void applyIdleState() {
+        b.btnStartStop.setBackground(ContextCompat.getDrawable(this, R.drawable.btn_circle_cyan));
+        b.btnStartStop.setText("START\nSESSION");
+        b.btnStartStop.setTextColor(getColor(R.color.ocean_deep));
+        b.btnGlowRing.setBackground(ContextCompat.getDrawable(this, R.drawable.glow_cyan));
+        stopAllGlow();
+        startIdleGlow();
     }
 
-    private void startTimerDisplay() {
+    private void applyActiveState() {
+        b.btnStartStop.setBackground(ContextCompat.getDrawable(this, R.drawable.btn_circle_coral));
+        b.btnStartStop.setText("STOP\nSESSION");
+        b.btnStartStop.setTextColor(Color.WHITE);
+        b.btnGlowRing.setBackground(ContextCompat.getDrawable(this, R.drawable.glow_coral));
+        stopAllGlow();
+        startActiveGlow();
+    }
+
+    // ── Glow animations ──────────────────────────────────────────────────────
+
+    private void startIdleGlow() {
+        // Corona: expands out and fades (pulse every 2.5 s)
+        ObjectAnimator cScaleX = pulse(b.btnGlowRing, "scaleX", 1f, 1.8f, 2500);
+        ObjectAnimator cScaleY = pulse(b.btnGlowRing, "scaleY", 1f, 1.8f, 2500);
+        ObjectAnimator cAlpha  = pulse(b.btnGlowRing, "alpha",  0.8f, 0f,  2500);
+
+        coronaAnim = new AnimatorSet();
+        coronaAnim.playTogether(cScaleX, cScaleY, cAlpha);
+        coronaAnim.start();
+
+        // Button: slow breathe
+        ObjectAnimator bX = breathe(b.btnStartStop, "scaleX", 0.94f, 1.06f, 1600);
+        ObjectAnimator bY = breathe(b.btnStartStop, "scaleY", 0.94f, 1.06f, 1600);
+        breatheAnim = new AnimatorSet();
+        breatheAnim.playTogether(bX, bY);
+        breatheAnim.start();
+    }
+
+    private void startActiveGlow() {
+        // Faster, more urgent corona when recording
+        ObjectAnimator cScaleX = pulse(b.btnGlowRing, "scaleX", 1f, 2.0f, 1400);
+        ObjectAnimator cScaleY = pulse(b.btnGlowRing, "scaleY", 1f, 2.0f, 1400);
+        ObjectAnimator cAlpha  = pulse(b.btnGlowRing, "alpha",  0.9f, 0f,  1400);
+
+        coronaAnim = new AnimatorSet();
+        coronaAnim.playTogether(cScaleX, cScaleY, cAlpha);
+        coronaAnim.start();
+
+        // Button: quicker breathe
+        ObjectAnimator bX = breathe(b.btnStartStop, "scaleX", 0.96f, 1.04f, 900);
+        ObjectAnimator bY = breathe(b.btnStartStop, "scaleY", 0.96f, 1.04f, 900);
+        breatheAnim = new AnimatorSet();
+        breatheAnim.playTogether(bX, bY);
+        breatheAnim.start();
+    }
+
+    private void stopAllGlow() {
+        if (coronaAnim != null) { coronaAnim.cancel(); coronaAnim = null; }
+        if (breatheAnim != null) { breatheAnim.cancel(); breatheAnim = null; }
+        b.btnGlowRing.setAlpha(1f);
+        b.btnGlowRing.setScaleX(1f);
+        b.btnGlowRing.setScaleY(1f);
+        b.btnStartStop.setScaleX(1f);
+        b.btnStartStop.setScaleY(1f);
+    }
+
+    private ObjectAnimator pulse(android.view.View v, String prop, float from, float to, long dur) {
+        ObjectAnimator a = ObjectAnimator.ofFloat(v, prop, from, to);
+        a.setDuration(dur);
+        a.setRepeatCount(ValueAnimator.INFINITE);
+        a.setInterpolator(new DecelerateInterpolator());
+        return a;
+    }
+
+    private ObjectAnimator breathe(android.view.View v, String prop, float from, float to, long dur) {
+        ObjectAnimator a = ObjectAnimator.ofFloat(v, prop, from, to);
+        a.setDuration(dur);
+        a.setRepeatCount(ValueAnimator.INFINITE);
+        a.setRepeatMode(ValueAnimator.REVERSE);
+        a.setInterpolator(new AccelerateDecelerateInterpolator());
+        return a;
+    }
+
+    // ── Timer tick ───────────────────────────────────────────────────────────
+
+    private void startTimerTick() {
         timerHandler.post(new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 if (!sessionActive || !serviceBound) return;
                 long elapsed = System.currentTimeMillis() - trackingService.getSessionStartTime();
-                binding.tvDuration.setText(formatDuration(elapsed));
-                // Also refresh calories on timer tick (GPS updates may be sparse)
-                binding.tvCalories.setText(String.valueOf(trackingService.getCalories()));
+                b.tvDuration.setText(formatDuration(elapsed));
+                b.tvCalories.setText(String.valueOf(trackingService.getCalories()));
                 timerHandler.postDelayed(this, 1000);
             }
         });
     }
 
-    @Override
-    public void onUpdate(float distanceKm, float speedKmh, float maxSpeedKmh, int calories, long elapsedMs) {
-        runOnUiThread(() -> {
-            binding.tvDistance.setText(String.format(Locale.US, "%.2f", distanceKm));
-            binding.tvSpeed.setText(String.format(Locale.US, "%.1f", speedKmh));
-            binding.tvMaxSpeed.setText(String.format(Locale.US, "%.1f", maxSpeedKmh));
-            binding.tvCalories.setText(String.valueOf(calories));
-            binding.tvDuration.setText(formatDuration(elapsedMs));
+    // ── TrackingService callbacks ─────────────────────────────────────────────
 
-            // Pulse speed card when moving
-            if (speedKmh > 0.5f) {
-                flashCard(binding.cardSpeed);
-            }
+    @Override
+    public void onUpdate(float distKm, float speedKmh, float maxSpeedKmh,
+                         int calories, long elapsedMs) {
+        runOnUiThread(() -> {
+            b.tvDistance.setText(String.format(Locale.US, "%.2f", distKm));
+            b.tvSpeed.setText(String.format(Locale.US, "%.1f", speedKmh));
+            b.tvMaxSpeed.setText(String.format(Locale.US, "%.1f", maxSpeedKmh));
+            b.tvCalories.setText(String.valueOf(calories));
+            b.tvDuration.setText(formatDuration(elapsedMs));
+            if (speedKmh > 1f) flashCard(b.cardSpeed);
         });
     }
 
@@ -187,82 +233,61 @@ public class MainActivity extends AppCompatActivity implements TrackingService.O
     public void onGpsStatusChanged(boolean hasGps) {
         runOnUiThread(() -> {
             if (hasGps) {
-                binding.tvGpsStatus.setText(R.string.gps_ready);
-                binding.tvGpsStatus.setTextColor(getColor(R.color.wave_teal));
-                binding.gpsIndicator.setBackgroundResource(R.drawable.gps_indicator);
-                // Make indicator green
-                binding.gpsIndicator.getBackground().setTint(getColor(R.color.wave_teal));
-                binding.gpsIndicator.startAnimation(pulseAnim);
+                b.tvGpsStatus.setText(R.string.gps_ready);
+                b.tvGpsStatus.setTextColor(getColor(R.color.wave_teal));
+                b.gpsIndicator.getBackground().setTint(getColor(R.color.wave_teal));
             } else {
-                binding.tvGpsStatus.setText(R.string.waiting_gps);
-                binding.tvGpsStatus.setTextColor(getColor(R.color.text_secondary));
-                binding.gpsIndicator.clearAnimation();
-                binding.gpsIndicator.getBackground().setTint(getColor(R.color.sun_coral));
+                b.tvGpsStatus.setText(R.string.waiting_gps);
+                b.tvGpsStatus.setTextColor(getColor(R.color.text_secondary));
+                b.gpsIndicator.getBackground().setTint(getColor(R.color.sun_coral));
             }
         });
     }
 
-    private void setupGlowAnimation() {
-        ObjectAnimator alphaAnim = ObjectAnimator.ofFloat(binding.btnGlowRing, "alpha", 0.2f, 0.7f);
-        alphaAnim.setDuration(1500);
-        alphaAnim.setRepeatMode(ValueAnimator.REVERSE);
-        alphaAnim.setRepeatCount(ValueAnimator.INFINITE);
+    // ── Micro-animations ─────────────────────────────────────────────────────
 
-        ObjectAnimator scaleX = ObjectAnimator.ofFloat(binding.btnGlowRing, "scaleX", 0.95f, 1.15f);
-        ObjectAnimator scaleY = ObjectAnimator.ofFloat(binding.btnGlowRing, "scaleY", 0.95f, 1.15f);
-        scaleX.setDuration(1500);
-        scaleX.setRepeatMode(ValueAnimator.REVERSE);
-        scaleX.setRepeatCount(ValueAnimator.INFINITE);
-        scaleY.setDuration(1500);
-        scaleY.setRepeatMode(ValueAnimator.REVERSE);
-        scaleY.setRepeatCount(ValueAnimator.INFINITE);
-
-        glowAnimSet = new AnimatorSet();
-        glowAnimSet.playTogether(alphaAnim, scaleX, scaleY);
-        glowAnimSet.start();
-    }
-
-    private void animateButtonPress(View v) {
-        v.animate().scaleX(0.92f).scaleY(0.92f).setDuration(80).withEndAction(
-            () -> v.animate().scaleX(1f).scaleY(1f).setDuration(120).start()
-        ).start();
+    private void squishButton() {
+        b.btnStartStop.animate()
+            .scaleX(0.88f).scaleY(0.88f).setDuration(70)
+            .withEndAction(() ->
+                b.btnStartStop.animate().scaleX(1f).scaleY(1f).setDuration(150).start())
+            .start();
     }
 
     private void animateCardsIn() {
-        Animation slideUp = AnimationUtils.loadAnimation(this, R.anim.slide_up);
-        binding.cardDistance.startAnimation(slideUp);
-        Animation slideUp2 = AnimationUtils.loadAnimation(this, R.anim.slide_up);
-        slideUp2.setStartOffset(80);
-        binding.cardSpeed.startAnimation(slideUp2);
-        Animation slideUp3 = AnimationUtils.loadAnimation(this, R.anim.slide_up);
-        slideUp3.setStartOffset(160);
-        binding.cardCalories.startAnimation(slideUp3);
-        Animation slideUp4 = AnimationUtils.loadAnimation(this, R.anim.slide_up);
-        slideUp4.setStartOffset(240);
-        binding.cardMaxSpeed.startAnimation(slideUp4);
+        long[] delays = {0, 80, 160, 240};
+        android.view.View[] cards = {b.cardDistance, b.cardSpeed, b.cardCalories, b.cardMaxSpeed};
+        for (int i = 0; i < cards.length; i++) {
+            android.view.View c = cards[i];
+            c.setAlpha(0f);
+            c.setTranslationY(40f);
+            c.animate().alpha(1f).translationY(0f).setDuration(400)
+                .setStartDelay(delays[i])
+                .setInterpolator(new DecelerateInterpolator())
+                .start();
+        }
     }
 
-    private void flashCard(View card) {
-        card.animate().alpha(0.5f).setDuration(150).withEndAction(
-            () -> card.animate().alpha(1f).setDuration(150).start()
-        ).start();
+    private void flashCard(android.view.View card) {
+        card.animate().alpha(0.4f).setDuration(120)
+            .withEndAction(() -> card.animate().alpha(1f).setDuration(180).start())
+            .start();
     }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private String formatDuration(long ms) {
-        long secs = ms / 1000;
-        long h = secs / 3600;
-        long m = (secs % 3600) / 60;
-        long s = secs % 60;
-        return String.format(Locale.US, "%02d:%02d:%02d", h, m, s);
+        long s = ms / 1000;
+        return String.format(Locale.US, "%02d:%02d:%02d", s / 3600, (s % 3600) / 60, s % 60);
     }
 
     @Override
     protected void onDestroy() {
         timerHandler.removeCallbacksAndMessages(null);
-        if (glowAnimSet != null) glowAnimSet.cancel();
+        stopAllGlow();
         if (serviceBound) {
             trackingService.setUpdateListener(null);
-            unbindService(serviceConnection);
+            unbindService(conn);
             serviceBound = false;
         }
         super.onDestroy();
