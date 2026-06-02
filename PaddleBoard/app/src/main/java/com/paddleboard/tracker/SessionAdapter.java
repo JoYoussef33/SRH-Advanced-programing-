@@ -14,18 +14,22 @@ import java.util.Locale;
 
 public class SessionAdapter extends RecyclerView.Adapter<SessionAdapter.VH> {
 
+    public interface OnDeleteListener { void onDelete(int position, SessionData session); }
+
     private final List<SessionData> items;
     private final Context ctx;
+    private OnDeleteListener deleteListener;
 
     public SessionAdapter(Context ctx, List<SessionData> items) {
-        this.ctx = ctx;
+        this.ctx   = ctx;
         this.items = items;
     }
 
+    public void setOnDeleteListener(OnDeleteListener l) { this.deleteListener = l; }
+
     @NonNull @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(ctx).inflate(R.layout.item_session, parent, false);
-        return new VH(v);
+        return new VH(LayoutInflater.from(ctx).inflate(R.layout.item_session, parent, false));
     }
 
     @Override
@@ -49,15 +53,28 @@ public class SessionAdapter extends RecyclerView.Adapter<SessionAdapter.VH> {
                 ctx.startActivity(i);
             } catch (JSONException ignored) {}
         });
+
+        h.btnDelete.setOnClickListener(v -> {
+            int adapterPos = h.getAdapterPosition();
+            if (adapterPos != RecyclerView.NO_ID && deleteListener != null) {
+                deleteListener.onDelete(adapterPos, items.get(adapterPos));
+            }
+        });
     }
 
     @Override public int getItemCount() { return items.size(); }
 
     public SessionData getItem(int pos) { return items.get(pos); }
-    public void removeAt(int pos) { items.remove(pos); notifyItemRemoved(pos); }
+
+    public void removeAt(int pos) {
+        if (pos >= 0 && pos < items.size()) {
+            items.remove(pos);
+            notifyItemRemoved(pos);
+        }
+    }
 
     static class VH extends RecyclerView.ViewHolder {
-        TextView tvDate, tvTier, tvDistance, tvDuration, tvCalories, tvMaxSpeed;
+        TextView tvDate, tvTier, tvDistance, tvDuration, tvCalories, tvMaxSpeed, btnDelete;
         VH(View v) {
             super(v);
             tvDate     = v.findViewById(R.id.tvHistDate);
@@ -66,6 +83,7 @@ public class SessionAdapter extends RecyclerView.Adapter<SessionAdapter.VH> {
             tvDuration = v.findViewById(R.id.tvHistDuration);
             tvCalories = v.findViewById(R.id.tvHistCalories);
             tvMaxSpeed = v.findViewById(R.id.tvHistMaxSpeed);
+            btnDelete  = v.findViewById(R.id.btnDeleteSession);
         }
     }
 }

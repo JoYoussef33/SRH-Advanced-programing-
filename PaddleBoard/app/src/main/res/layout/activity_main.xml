@@ -206,27 +206,28 @@
             </LinearLayout>
         </GridLayout>
 
-        <!-- ══ Glow button (clipChildren=false all the way up) ════════════════ -->
+        <!-- ══ Water ripple button — clipChildren=false lets rings extend freely ═ -->
         <FrameLayout
-            android:layout_width="260dp"
-            android:layout_height="260dp"
+            android:layout_width="280dp"
+            android:layout_height="280dp"
             android:clipChildren="false"
             android:clipToPadding="false"
             android:background="@android:color/transparent"
             android:layout_marginTop="4dp"
             android:layout_marginBottom="4dp">
 
-            <View
-                android:id="@+id/btnGlowRing"
-                android:layout_width="180dp"
-                android:layout_height="180dp"
-                android:layout_gravity="center"
-                android:background="@drawable/glow_cyan"/>
+            <!-- Organic water ripple rings (full size of container) -->
+            <com.paddleboard.tracker.WaterRippleView
+                android:id="@+id/waterRipple"
+                android:layout_width="280dp"
+                android:layout_height="280dp"
+                android:layout_gravity="center"/>
 
+            <!-- The actual button, centred over the ripples -->
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btnStartStop"
-                android:layout_width="158dp"
-                android:layout_height="158dp"
+                android:layout_width="154dp"
+                android:layout_height="154dp"
                 android:layout_gravity="center"
                 android:background="@drawable/btn_circle_cyan"
                 android:text="START&#10;SESSION"
@@ -234,7 +235,7 @@
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.08"
-                android:elevation="6dp"
+                android:elevation="8dp"
                 android:stateListAnimator="@null"/>
         </FrameLayout>
 

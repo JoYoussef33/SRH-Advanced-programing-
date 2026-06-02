@@ -34,7 +34,6 @@ public class MainActivity extends AppCompatActivity
     private boolean sessionActive = false;
 
     private final Handler timerHandler = new Handler(Looper.getMainLooper());
-    private AnimatorSet coronaAnim;
     private AnimatorSet breatheAnim;
 
     private final ActivityResultLauncher<String> permLauncher =
@@ -63,7 +62,7 @@ public class MainActivity extends AppCompatActivity
         b = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(b.getRoot());
 
-        startIdleGlow();
+        applyIdleState();
 
         b.btnStartStop.setOnClickListener(v -> {
             squishButton();
@@ -147,62 +146,31 @@ public class MainActivity extends AppCompatActivity
         b.btnStartStop.setBackground(ContextCompat.getDrawable(this, R.drawable.btn_circle_cyan));
         b.btnStartStop.setText("START\nSESSION");
         b.btnStartStop.setTextColor(getColor(R.color.ocean_deep));
-        b.btnGlowRing.setBackground(ContextCompat.getDrawable(this, R.drawable.glow_cyan));
-        stopAllGlow(); startIdleGlow();
+        b.waterRipple.setRippleColor(0xFF00D4FF); // cyan
+        b.waterRipple.setActive(false);
+        stopBreath(); startBreath(0.93f, 1.07f, 1700);
     }
 
     private void applyActiveState() {
         b.btnStartStop.setBackground(ContextCompat.getDrawable(this, R.drawable.btn_circle_coral));
         b.btnStartStop.setText("STOP\nSESSION");
         b.btnStartStop.setTextColor(Color.WHITE);
-        b.btnGlowRing.setBackground(ContextCompat.getDrawable(this, R.drawable.glow_coral));
-        stopAllGlow(); startActiveGlow();
+        b.waterRipple.setRippleColor(0xFFFF6B35); // coral
+        b.waterRipple.setActive(true);
+        stopBreath(); startBreath(0.96f, 1.04f, 900);
     }
 
-    // ── Glow animations ───────────────────────────────────────────────────────
-
-    private void startIdleGlow() {
-        coronaAnim = new AnimatorSet();
-        coronaAnim.playTogether(
-            pulse(b.btnGlowRing, "scaleX", 1f, 1.8f, 2500),
-            pulse(b.btnGlowRing, "scaleY", 1f, 1.8f, 2500),
-            pulse(b.btnGlowRing, "alpha",  0.8f, 0f, 2500));
-        coronaAnim.start();
-
+    private void startBreath(float from, float to, long dur) {
         breatheAnim = new AnimatorSet();
         breatheAnim.playTogether(
-            breathe(b.btnStartStop, "scaleX", 0.94f, 1.06f, 1600),
-            breathe(b.btnStartStop, "scaleY", 0.94f, 1.06f, 1600));
+            breathe(b.btnStartStop, "scaleX", from, to, dur),
+            breathe(b.btnStartStop, "scaleY", from, to, dur));
         breatheAnim.start();
     }
 
-    private void startActiveGlow() {
-        coronaAnim = new AnimatorSet();
-        coronaAnim.playTogether(
-            pulse(b.btnGlowRing, "scaleX", 1f, 2.1f, 1200),
-            pulse(b.btnGlowRing, "scaleY", 1f, 2.1f, 1200),
-            pulse(b.btnGlowRing, "alpha",  1f, 0f,   1200));
-        coronaAnim.start();
-
-        breatheAnim = new AnimatorSet();
-        breatheAnim.playTogether(
-            breathe(b.btnStartStop, "scaleX", 0.97f, 1.03f, 800),
-            breathe(b.btnStartStop, "scaleY", 0.97f, 1.03f, 800));
-        breatheAnim.start();
-    }
-
-    private void stopAllGlow() {
-        if (coronaAnim != null) { coronaAnim.cancel(); coronaAnim = null; }
+    private void stopBreath() {
         if (breatheAnim != null) { breatheAnim.cancel(); breatheAnim = null; }
-        b.btnGlowRing.setAlpha(1f); b.btnGlowRing.setScaleX(1f); b.btnGlowRing.setScaleY(1f);
         b.btnStartStop.setScaleX(1f); b.btnStartStop.setScaleY(1f);
-    }
-
-    private ObjectAnimator pulse(android.view.View v, String prop, float from, float to, long dur) {
-        ObjectAnimator a = ObjectAnimator.ofFloat(v, prop, from, to);
-        a.setDuration(dur); a.setRepeatCount(ValueAnimator.INFINITE);
-        a.setInterpolator(new DecelerateInterpolator());
-        return a;
     }
 
     private ObjectAnimator breathe(android.view.View v, String prop, float from, float to, long dur) {
@@ -288,7 +256,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onDestroy() {
         timerHandler.removeCallbacksAndMessages(null);
-        stopAllGlow();
+        stopBreath();
         if (serviceBound) {
             trackingService.setUpdateListener(null);
             unbindService(conn);

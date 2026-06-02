@@ -2,78 +2,105 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
+    android:orientation="horizontal"
     android:background="@drawable/card_bg"
-    android:padding="18dp"
     android:layout_marginStart="16dp"
     android:layout_marginEnd="16dp"
     android:layout_marginBottom="12dp">
 
-    <!-- Date + tier -->
+    <!-- Main content -->
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="10dp">
-        <TextView
-            android:id="@+id/tvHistDate"
-            android:layout_width="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Date + tier -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp"/>
+            android:orientation="horizontal"
+            android:layout_marginBottom="10dp">
+            <TextView
+                android:id="@+id/tvHistDate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"/>
+            <TextView
+                android:id="@+id/tvHistTier"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"/>
+        </LinearLayout>
+
+        <!-- Stat row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="📍" android:textSize="15sp"/>
+                <TextView android:id="@+id/tvHistDistance"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textColor="@color/wave_cyan" android:textSize="20sp"
+                    android:textStyle="bold" android:fontFamily="sans-serif-condensed"/>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="⏱" android:textSize="15sp"/>
+                <TextView android:id="@+id/tvHistDuration"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textColor="@color/wave_teal" android:textSize="20sp"
+                    android:textStyle="bold" android:fontFamily="sans-serif-condensed"/>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="🔥" android:textSize="15sp"/>
+                <TextView android:id="@+id/tvHistCalories"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textColor="@color/sun_coral" android:textSize="20sp"
+                    android:textStyle="bold" android:fontFamily="sans-serif-condensed"/>
+            </LinearLayout>
+        </LinearLayout>
+
         <TextView
-            android:id="@+id/tvHistTier"
+            android:id="@+id/tvHistMaxSpeed"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.1"/>
+            android:textColor="@color/sun_yellow"
+            android:textSize="11sp"/>
     </LinearLayout>
 
-    <!-- Stats row -->
+    <!-- Delete button — always visible, clear tap target -->
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="8dp">
+        android:layout_width="48dp"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical">
 
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="📍" android:textSize="16sp"/>
-            <TextView android:id="@+id/tvHistDistance"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textColor="@color/wave_cyan" android:textSize="22sp"
-                android:textStyle="bold" android:fontFamily="sans-serif-condensed"/>
-        </LinearLayout>
-
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="⏱" android:textSize="16sp"/>
-            <TextView android:id="@+id/tvHistDuration"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textColor="@color/wave_teal" android:textSize="22sp"
-                android:textStyle="bold" android:fontFamily="sans-serif-condensed"/>
-        </LinearLayout>
-
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-            android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="🔥" android:textSize="16sp"/>
-            <TextView android:id="@+id/tvHistCalories"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:textColor="@color/sun_coral" android:textSize="22sp"
-                android:textStyle="bold" android:fontFamily="sans-serif-condensed"/>
-        </LinearLayout>
+        <TextView
+            android:id="@+id/btnDeleteSession"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:gravity="center"
+            android:text="✕"
+            android:textColor="#88FF6B35"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:background="#11FF6B35"/>
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/tvHistMaxSpeed"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textColor="@color/sun_yellow"
-        android:textSize="11sp"/>
 
 </LinearLayout>
