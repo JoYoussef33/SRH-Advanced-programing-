@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Ocean / SUP theme palette -->
+    <color name="ocean_deep">#0A1628</color>
+    <color name="ocean_mid">#0D2137</color>
+    <color name="ocean_surface">#1A3A5C</color>
+    <color name="wave_cyan">#00D4FF</color>
+    <color name="wave_cyan_dark">#0099BB</color>
+    <color name="wave_teal">#00FFD4</color>
+    <color name="sun_coral">#FF6B35</color>
+    <color name="sun_yellow">#FFD166</color>
+    <color name="foam_white">#E8F8FF</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#A0D4F0</color>
+    <color name="card_bg">#12243E</color>
+    <color name="card_stroke">#1E4A7A</color>
+    <color name="glow_cyan">#4400D4FF</color>
+    <color name="status_bar">#0A1628</color>
+</resources>

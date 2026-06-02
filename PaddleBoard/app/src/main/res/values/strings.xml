@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PaddleBoard</string>
+    <string name="start_session">START SESSION</string>
+    <string name="stop_session">STOP SESSION</string>
+    <string name="distance_label">DISTANCE</string>
+    <string name="speed_label">SPEED</string>
+    <string name="calories_label">CALORIES</string>
+    <string name="duration_label">DURATION</string>
+    <string name="km">km</string>
+    <string name="kmh">km/h</string>
+    <string name="kcal">kcal</string>
+    <string name="waiting_gps">Acquiring GPS…</string>
+    <string name="gps_ready">GPS Ready</string>
+    <string name="channel_name">PaddleBoard Tracking</string>
+    <string name="channel_desc">Live GPS tracking for your SUP session</string>
+    <string name="notif_title">PaddleBoard Active</string>
+    <string name="notif_text">Tracking your session…</string>
+    <string name="permission_needed">Location permission is required to track your session.</string>
+</resources>

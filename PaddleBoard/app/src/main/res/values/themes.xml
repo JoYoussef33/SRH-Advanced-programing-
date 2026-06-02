@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.PaddleBoard" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/wave_cyan</item>
+        <item name="colorPrimaryVariant">@color/ocean_surface</item>
+        <item name="colorOnPrimary">@color/ocean_deep</item>
+        <item name="colorSecondary">@color/sun_coral</item>
+        <item name="colorOnSecondary">@color/foam_white</item>
+        <item name="android:windowBackground">@color/ocean_deep</item>
+        <item name="android:statusBarColor">@color/status_bar</item>
+        <item name="android:navigationBarColor">@color/ocean_deep</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+</resources>

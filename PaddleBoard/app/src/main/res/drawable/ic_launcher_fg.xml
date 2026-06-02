@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Paddle / board icon -->
+    <path
+        android:fillColor="#00D4FF"
+        android:pathData="M54,20 C54,20 38,36 38,54 C38,63 45,70 54,70 C63,70 70,63 70,54 C70,36 54,20 54,20Z"/>
+    <!-- Waves -->
+    <path
+        android:fillColor="#00FFD4"
+        android:strokeColor="#00FFD4"
+        android:strokeWidth="3"
+        android:pathData="M30,80 Q40,74 50,80 Q60,86 70,80 Q80,74 90,80"/>
+    <path
+        android:fillColor="#00D4FF"
+        android:strokeColor="#00D4FF"
+        android:strokeWidth="2"
+        android:pathData="M24,88 Q36,82 48,88 Q60,94 72,88 Q84,82 96,88"/>
+</vector>
