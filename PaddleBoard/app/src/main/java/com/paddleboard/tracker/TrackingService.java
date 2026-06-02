@@ -5,17 +5,17 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Binder;
+import android.os.Build;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Looper;
 import androidx.core.app.NotificationCompat;
-import androidx.core.location.LocationManagerCompat;
-import android.location.LocationManager;
-import android.location.LocationListener;
-import android.content.Context;
-import android.os.Bundle;
 
 public class TrackingService extends Service {
 
@@ -129,8 +129,7 @@ public class TrackingService extends Service {
     }
 
     private int calcCalories(long elapsedMs) {
-        // SUP paddling burns ~400-500 kcal/hour for a 70kg person
-        // Using 450 kcal/hour base rate
+        // SUP paddling ~450 kcal/hour for a 70 kg person
         double hours = elapsedMs / 3_600_000.0;
         return (int) (450.0 * hours);
     }
@@ -150,18 +149,22 @@ public class TrackingService extends Service {
     }
 
     private void createNotificationChannel() {
-        NotificationChannel channel = new NotificationChannel(
-            CHANNEL_ID,
-            getString(R.string.channel_name),
-            NotificationManager.IMPORTANCE_LOW);
-        channel.setDescription(getString(R.string.channel_desc));
-        NotificationManager nm = getSystemService(NotificationManager.class);
-        if (nm != null) nm.createNotificationChannel(channel);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                CHANNEL_ID,
+                getString(R.string.channel_name),
+                NotificationManager.IMPORTANCE_LOW);
+            channel.setDescription(getString(R.string.channel_desc));
+            NotificationManager nm = getSystemService(NotificationManager.class);
+            if (nm != null) nm.createNotificationChannel(channel);
+        }
     }
 
     private Notification buildNotification() {
         Intent intent = new Intent(this, MainActivity.class);
-        PendingIntent pi = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        int piFlags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+            ? PendingIntent.FLAG_IMMUTABLE : 0;
+        PendingIntent pi = PendingIntent.getActivity(this, 0, intent, piFlags);
         return new NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.notif_title))
             .setContentText(getString(R.string.notif_text))
