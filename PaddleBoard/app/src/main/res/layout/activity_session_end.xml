@@ -52,8 +52,21 @@
                 android:textSize="26sp"
                 android:textStyle="bold"
                 android:lineSpacingMultiplier="1.2"
-                android:layout_marginBottom="32dp"
+                android:layout_marginBottom="16dp"
                 android:fontFamily="sans-serif-condensed"/>
+
+            <!-- Personal records broken this session -->
+            <TextView
+                android:id="@+id/tvRecords"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textColor="@color/sun_yellow"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:lineSpacingExtra="4dp"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone"/>
 
             <!-- Stats glass card -->
             <LinearLayout

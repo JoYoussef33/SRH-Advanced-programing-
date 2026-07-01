@@ -10,13 +10,19 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.text.InputType;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
+import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -34,12 +40,19 @@ public class MainActivity extends AppCompatActivity
     private boolean sessionActive = false;
 
     private final Handler timerHandler = new Handler(Looper.getMainLooper());
+    private final Handler tipHandler   = new Handler(Looper.getMainLooper());
     private AnimatorSet breatheAnim;
+    private int tipIndex;
 
     private final ActivityResultLauncher<String> permLauncher =
         registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
             if (granted) startSession();
             else Toast.makeText(this, getString(R.string.permission_needed), Toast.LENGTH_LONG).show();
+        });
+
+    private final ActivityResultLauncher<String> condPermLauncher =
+        registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+            if (granted) refreshConditions();
         });
 
     private final ServiceConnection conn = new ServiceConnection() {
@@ -73,7 +86,147 @@ public class MainActivity extends AppCompatActivity
         b.btnHistory.setOnClickListener(v ->
             startActivity(new Intent(this, HistoryActivity.class)));
 
+        b.btnProfile.setOnClickListener(v -> showWeightDialog());
+        b.cardConditions.setOnClickListener(v -> refreshConditions());
+
+        startTipRotation();
+        refreshConditions();
+
         bindService(new Intent(this, TrackingService.class), conn, Context.BIND_AUTO_CREATE);
+    }
+
+    // ── Live conditions (Open-Meteo, free & keyless) ──────────────────────────
+
+    private void refreshConditions() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            // show any cached data; fetch permission on tap
+            WeatherData cached = WeatherRepo.loadCached(this);
+            if (cached != null) showConditions(cached, true);
+            else b.tvVerdict.setText("Tap to check the water 🌊");
+            b.cardConditions.setOnClickListener(v ->
+                condPermLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION));
+            return;
+        }
+        b.cardConditions.setOnClickListener(v -> refreshConditions());
+
+        Location loc = lastKnownLocation();
+        if (loc == null) {
+            WeatherData cached = WeatherRepo.loadCached(this);
+            if (cached != null) showConditions(cached, true);
+            else b.tvVerdict.setText("Waiting for a GPS fix… 📡");
+            return;
+        }
+
+        b.tvVerdict.setText("Reading the ocean… 🌊");
+        WeatherRepo.fetch(this, loc.getLatitude(), loc.getLongitude(), (data, fromCache) -> {
+            if (data != null) showConditions(data, fromCache);
+            else b.tvVerdict.setText("No connection — try again later 📶");
+        });
+    }
+
+    private Location lastKnownLocation() {
+        LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        try {
+            for (String p : new String[]{LocationManager.GPS_PROVIDER,
+                    LocationManager.NETWORK_PROVIDER, LocationManager.PASSIVE_PROVIDER}) {
+                Location l = lm.getLastKnownLocation(p);
+                if (l != null) return l;
+            }
+        } catch (SecurityException ignored) {}
+        return null;
+    }
+
+    private void showConditions(WeatherData w, boolean fromCache) {
+        b.tvVerdict.setText(w.verdict());
+        b.tvPaddleScore.setText(String.valueOf(w.score()));
+        b.tvPaddleScore.setTextColor(w.scoreColor());
+        b.scoreBadge.setVisibility(android.view.View.VISIBLE);
+
+        StringBuilder line1 = new StringBuilder();
+        if (!Float.isNaN(w.windKmh)) {
+            line1.append(String.format(Locale.US, "💨 %.0f km/h %s", w.windKmh, w.windCompass()));
+            if (!Float.isNaN(w.gustKmh))
+                line1.append(String.format(Locale.US, " (gusts %.0f)", w.gustKmh));
+        }
+        if (!Float.isNaN(w.airTempC))
+            line1.append(String.format(Locale.US, "  ·  🌡 %.0f°C", w.airTempC));
+        if (!Float.isNaN(w.uvIndex))
+            line1.append(String.format(Locale.US, "  ·  ☀️ UV %.0f", w.uvIndex));
+
+        StringBuilder line2 = new StringBuilder();
+        if (!Float.isNaN(w.waveHeightM))
+            line2.append(String.format(Locale.US, "🌊 %.1f m waves", w.waveHeightM));
+        if (!Float.isNaN(w.waterTempC)) {
+            if (line2.length() > 0) line2.append("  ·  ");
+            line2.append(String.format(Locale.US, "💧 %.0f°C water", w.waterTempC));
+        }
+        if (!w.sunrise.isEmpty()) {
+            if (line2.length() > 0) line2.append("  ·  ");
+            line2.append("🌅 ").append(w.sunrise).append("  🌇 ").append(w.sunset);
+        }
+
+        String detail = line1.toString();
+        if (line2.length() > 0) detail += "\n" + line2;
+        b.tvConditionsDetail.setText(detail);
+        b.tvConditionsDetail.setVisibility(android.view.View.VISIBLE);
+
+        long ageMin = (System.currentTimeMillis() - w.fetchedAtMs) / 60_000L;
+        b.tvConditionsAge.setText(ageMin < 1 ? "updated just now"
+                : "updated " + ageMin + " min ago · tap to refresh");
+        b.tvConditionsAge.setVisibility(android.view.View.VISIBLE);
+    }
+
+    // ── Rotating SUP tips ─────────────────────────────────────────────────────
+
+    private void startTipRotation() {
+        tipIndex = new java.util.Random().nextInt(PaddleFacts.count());
+        b.tvTip.setText(PaddleFacts.next(tipIndex));
+        tipHandler.postDelayed(new Runnable() {
+            @Override public void run() {
+                b.tvTip.animate().alpha(0f).setDuration(400).withEndAction(() -> {
+                    b.tvTip.setText(PaddleFacts.next(++tipIndex));
+                    b.tvTip.animate().alpha(1f).setDuration(400).start();
+                }).start();
+                tipHandler.postDelayed(this, 10_000);
+            }
+        }, 10_000);
+    }
+
+    // ── Weight profile ────────────────────────────────────────────────────────
+
+    private void showWeightDialog() {
+        EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        input.setText(String.format(Locale.US, "%.0f", UserProfile.getWeightKg(this)));
+        input.setSelection(input.getText().length());
+
+        FrameLayout wrap = new FrameLayout(this);
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
+        wrap.setPadding(pad, 0, pad, 0);
+        wrap.addView(input);
+
+        new AlertDialog.Builder(this)
+            .setTitle("Your weight (kg)")
+            .setMessage("Used for accurate calorie tracking (MET formula).")
+            .setView(wrap)
+            .setPositiveButton("Save", (d, w) -> {
+                try {
+                    float kg = Float.parseFloat(input.getText().toString().trim());
+                    if (kg >= 30f && kg <= 250f) {
+                        UserProfile.setWeightKg(this, kg);
+                        Toast.makeText(this, "Saved — calories now tuned to you 💪",
+                                Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "Enter a weight between 30 and 250 kg",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                } catch (NumberFormatException e) {
+                    Toast.makeText(this, "Invalid number", Toast.LENGTH_SHORT).show();
+                }
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
     }
 
     private void checkPermission() {
@@ -256,6 +409,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onDestroy() {
         timerHandler.removeCallbacksAndMessages(null);
+        tipHandler.removeCallbacksAndMessages(null);
         stopBreath();
         if (serviceBound) {
             trackingService.setUpdateListener(null);

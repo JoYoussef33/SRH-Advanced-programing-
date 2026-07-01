@@ -52,6 +52,22 @@ public class SessionEndActivity extends AppCompatActivity {
         TextView tvMsg = findViewById(R.id.tvMessage);
         tvMsg.setText(message);
 
+        // ── Personal records (only for a fresh session) ──────────────────────
+        if (!readOnly) {
+            java.util.List<String> records =
+                Achievements.newRecords(session, SessionStorage.loadAll(this));
+            if (!records.isEmpty()) {
+                TextView tvRecords = findViewById(R.id.tvRecords);
+                StringBuilder sb = new StringBuilder();
+                for (String r : records) {
+                    if (sb.length() > 0) sb.append('\n');
+                    sb.append(r);
+                }
+                tvRecords.setText(sb);
+                tvRecords.setVisibility(View.VISIBLE);
+            }
+        }
+
         // ── Stats ────────────────────────────────────────────────────────────
         ((TextView) findViewById(R.id.tvResDate)).setText(session.formatDate());
         ((TextView) findViewById(R.id.tvResDistance))
@@ -78,8 +94,25 @@ public class SessionEndActivity extends AppCompatActivity {
         } else {
             btnSave.setOnClickListener(v -> {
                 SessionStorage.save(this, session);
-                Toast.makeText(this, "Session saved! 🏄", Toast.LENGTH_SHORT).show();
-                finish();
+                java.util.List<Achievements.Badge> fresh =
+                    Achievements.checkAndUnlock(this, session, SessionStorage.loadAll(this));
+                if (fresh.isEmpty()) {
+                    Toast.makeText(this, "Session saved! 🏄", Toast.LENGTH_SHORT).show();
+                    finish();
+                } else {
+                    StringBuilder sb = new StringBuilder();
+                    for (Achievements.Badge bd : fresh) {
+                        if (sb.length() > 0) sb.append("\n\n");
+                        sb.append(bd.emoji).append("  ").append(bd.title)
+                          .append("\n").append(bd.desc);
+                    }
+                    new androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle("🏆 Achievement unlocked!")
+                        .setMessage(sb)
+                        .setPositiveButton("NICE!", (d, w) -> finish())
+                        .setOnDismissListener(d -> finish())
+                        .show();
+                }
             });
             btnDiscard.setOnClickListener(v -> finish());
         }

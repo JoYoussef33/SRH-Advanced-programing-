@@ -91,7 +91,106 @@
                         android:textSize="11sp"/>
                 </LinearLayout>
             </LinearLayout>
+
+            <!-- Profile / weight settings -->
+            <TextView
+                android:id="@+id/btnProfile"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_gravity="top|end"
+                android:layout_margin="10dp"
+                android:gravity="center"
+                android:text="⚙️"
+                android:textSize="19sp"
+                android:background="#66000000"/>
         </FrameLayout>
+
+        <!-- ══ Live conditions card ═══════════════════════════════════════════ -->
+        <LinearLayout
+            android:id="@+id/cardConditions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:layout_marginStart="19dp"
+            android:layout_marginEnd="19dp"
+            android:layout_marginTop="12dp"
+            android:padding="14dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="LIVE CONDITIONS"
+                        android:textColor="#607090"
+                        android:textSize="9sp"
+                        android:letterSpacing="0.2"/>
+                    <TextView
+                        android:id="@+id/tvVerdict"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tap to check the water 🌊"
+                        android:textColor="@color/foam_white"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:layout_marginTop="2dp"/>
+                </LinearLayout>
+
+                <!-- Paddle Score -->
+                <LinearLayout
+                    android:id="@+id/scoreBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:visibility="gone">
+                    <TextView
+                        android:id="@+id/tvPaddleScore"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="—"
+                        android:textSize="30sp"
+                        android:textStyle="bold"
+                        android:fontFamily="sans-serif-condensed"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="PADDLE SCORE"
+                        android:textColor="#607090"
+                        android:textSize="8sp"
+                        android:letterSpacing="0.15"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvConditionsDetail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_secondary"
+                android:textSize="12.5sp"
+                android:lineSpacingExtra="3dp"
+                android:layout_marginTop="8dp"
+                android:visibility="gone"/>
+
+            <TextView
+                android:id="@+id/tvConditionsAge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#4A6080"
+                android:textSize="10sp"
+                android:layout_marginTop="4dp"
+                android:visibility="gone"/>
+        </LinearLayout>
 
         <!-- ══ Timer ══════════════════════════════════════════════════════════ -->
         <TextView
@@ -247,7 +346,21 @@
             android:text="Ready to paddle 🌊"
             android:textColor="@color/text_secondary"
             android:textSize="13sp"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Rotating SUP tip / fact -->
+        <TextView
+            android:id="@+id/tvTip"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textColor="#7FA8C8"
+            android:textSize="12sp"
+            android:lineSpacingExtra="2dp"
+            android:paddingStart="32dp"
+            android:paddingEnd="32dp"
+            android:minHeight="48dp"
+            android:layout_marginBottom="14dp"/>
 
         <!-- History button -->
         <TextView

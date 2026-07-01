@@ -51,6 +51,7 @@ public class TrackingService extends Service {
     private float    maxSpeedKmh          = 0f;
     private long     sessionStartTime     = 0L;
     private boolean  isTracking           = false;
+    private float    userWeightKg         = UserProfile.DEFAULT_WEIGHT_KG;
 
     private OnTrackingUpdateListener updateListener;
 
@@ -88,6 +89,7 @@ public class TrackingService extends Service {
         maxSpeedKmh           = 0f;
         lastGoodLocation      = null;
         sessionStartTime      = System.currentTimeMillis();
+        userWeightKg          = UserProfile.getWeightKg(this);
 
         locationListener = new LocationListener() {
             @Override public void onLocationChanged(Location loc) { handleLocation(loc); }
@@ -180,15 +182,22 @@ public class TrackingService extends Service {
         }
     }
 
-    // ── SUP calorie model ──────────────────────────────────────────────────────
-    // Base: ~450 kcal/hr at moderate pace.
-    // Adds intensity bonus if average speed suggests harder effort.
+    // ── SUP calorie model (MET-based) ─────────────────────────────────────────
+    // kcal = MET × weight(kg) × hours, with MET values from the Compendium
+    // of Physical Activities: SUP leisurely ≈ 4.5, general ≈ 6.0,
+    // vigorous effort ≈ 7.8, racing ≈ 12.5. MET is picked from average pace.
     private int calcCalories(long elapsedMs) {
         double hours = elapsedMs / 3_600_000.0;
-        float  avgKmh = elapsedMs > 0
-            ? (totalDistanceMeters / 1000f) / (float)(elapsedMs / 3_600_000.0) : 0f;
-        double rateKcalPerHour = 450 + Math.min(avgKmh * 20, 200); // up to +200 for fast pace
-        return (int)(rateKcalPerHour * hours);
+        if (hours <= 0) return 0;
+        float avgKmh = (totalDistanceMeters / 1000f) / (float) hours;
+
+        float met;
+        if      (avgKmh < 3.5f) met = 4.5f;  // leisurely drift
+        else if (avgKmh < 6.0f) met = 6.0f;  // steady cruising
+        else if (avgKmh < 8.0f) met = 7.8f;  // vigorous effort
+        else                    met = 12.5f; // race pace
+
+        return (int) (met * userWeightKg * hours);
     }
 
     // ── Public accessors ───────────────────────────────────────────────────────
